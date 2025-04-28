@@ -1,112 +1,76 @@
 #!/bin/bash
-# Hexo + Anzhiyu 主题一键配置脚本
-# 最后更新：2024-06-08
 
-# ------------ 用户配置区 ------------
-# 基础信息
-SITE_TITLE="日月R.Y.的小窝"          # 网站标题
-SITE_SUBTITLE="日月R.Y."       # 网站副标题
-SITE_AUTHOR="RiYueRY"             # 作者姓名
-SITE_DESCRIPTION="记录技术学习笔记" # 网站描述
-SITE_KEYWORDS="技术,编程,博客"     # 网站关键词（逗号分隔）
-SITE_LANGUAGE="zh-CN"            # 语言代码
-SITE_TIMEZONE="Asia/Shanghai"    # 时区
+# --------------------------
+# 用户自定义配置区 (按需修改)
+# --------------------------
+SITE_NAME="日月R.Y."
+SITE_SUBTITLE="记录与分享技术点滴"
+GITHUB_USERNAME="RiYurRY"       # 替换为 GitHub 用户名
+TIMEZONE="Asia/Shanghai"                    # 时区设置
+SITE_URL="https://${GITHUB_USERNAME}.github.io"
+THEME_CONFIG_FILE="hexo/themes/anzhiyu/_config.yml"  # 更新后的主题配置路径
+COMMIT_EMAIL="3968773701@qq.com"        # 提交邮箱
+COMMIT_NAME="RiYue"                      # 提交者姓名
 
-# 部署配置
-GIT_REPO="https://github.com/XK-YiM/XK-YiM.github.io.git"  # 仓库地址
-DEPLOY_BRANCH="main"              # 部署分支
+# --------------------------
+# 基础环境配置
+# --------------------------
+git config --global user.email "${COMMIT_EMAIL}"
+git config --global user.name "${COMMIT_NAME}"
+npm install -g hexo-cli
 
-# 主题配置
-THEME_CLONE_CMD="git clone -b main https://github.com/anzhiyu-c/hexo-theme-anzhiyu.git themes/anzhiyu"
-THEME_COLOR="#3b70fc"            # 主题主颜色
-ENABLE_DARKMODE="true"           # 启用暗黑模式 (true/false)
-# -----------------------------------
+# --------------------------
+# 项目初始化
+# --------------------------
+# 创建并进入 hexo 目录
+hexo init hexo && cd hexo || exit
 
-set -e
-echo "▶ 开始配置 Hexo 博客系统..."
+# 安装核心依赖
+npm install --save hexo-server hexo-generator-feed hexo-renderer-marked
 
-# 安装 Hexo CLI
-if ! command -v hexo &> /dev/null; then
-  echo "⚙ 安装 hexo-cli..."
-  npm install -g hexo-cli
-fi
+# 安装主题（通过 Git）
+git clone https://github.com/anzhiyu-c/hexo-theme-anzhiyu.git themes/anzhiyu
 
-# 初始化项目
-if [ ! -d "hexo" ]; then
-  echo "⚙ 初始化 Hexo 项目..."
-  hexo init hexo
-  cd hexo
-  npm install
-else
-  echo "⏩ 检测到现有 Hexo 项目，跳过初始化..."
-  cd hexo
-fi
+# --------------------------
+# 配置文件修改
+# --------------------------
+# 修改主配置
+sed -i "s/title:.*/title: ${SITE_NAME}/" _config.yml
+sed -i "s/subtitle:.*/subtitle: ${SITE_SUBTITLE}/" _config.yml
+sed -i "s/url:.*/url: ${SITE_URL}/" _config.yml
+sed -i "s/timezone:.*/timezone: ${TIMEZONE}/" _config.yml
+sed -i "s/theme:.*/theme: anzhiyu/" _config.yml
 
-# 安装主题
-if [ ! -d "themes/anzhiyu" ]; then
-  echo "⚙ 下载 Anzhiyu 主题..."
-  eval "$THEME_CLONE_CMD"
-else
-  echo "⏩ 主题已存在，跳过下载..."
-fi
+# 添加部署配置
+cat >> _config.yml << EOF
 
-# 生成主配置文件
-echo "⚙ 生成核心配置文件..."
-cat > _config.yml << EOF
-# ===================================
-# Hexo 主配置 (由自动化脚本生成)
-# ===================================
-
-# 站点信息
-title: $SITE_TITLE
-subtitle: $SITE_SUBTITLE
-description: $SITE_DESCRIPTION
-keywords: $SITE_KEYWORDS
-author: $SITE_AUTHOR
-language: $SITE_LANGUAGE
-timezone: $SITE_TIMEZONE
-
-# 扩展配置
-theme: anzhiyu
-url: https://${GIT_REPO#*github.com/}
-root: /
-permalink: :year/:month/:title/
-permalink_defaults:
-
-# 部署设置
+# Auto Deploy Settings
 deploy:
   type: git
-  repo: $GIT_REPO
-  branch: $DEPLOY_BRANCH
-  message: "Auto deployed by Hexo"
-
-# 扩展功能
-feed:
-  type: atom
-  path: atom.xml
-  limit: 20
+  repo: https://github.com/${GITHUB_USERNAME}/${GITHUB_USERNAME}.github.io.git
+  branch: main
 EOF
 
-# 生成主题配置文件
-echo "⚙ 生成主题配置文件..."
-if [ ! -f "_config.anzhiyu.yml" ]; then
-  cp themes/anzhiyu/_config.yml _config.anzhiyu.yml
-fi
+# 修改主题配置
+sed -i "s/^title:.*/title: ${SITE_NAME}/" ${THEME_CONFIG_FILE}
+sed -i "s/^subtitle:.*/subtitle: ${SITE_SUBTITLE}/" ${THEME_CONFIG_FILE}
 
-# 应用主题配色方案
-echo "⚙ 应用主题颜色 ($THEME_COLOR)..."
-sed -i "s/#3b70fc/$THEME_COLOR/g" _config.anzhiyu.yml
-sed -i "s/enable: false/enable: $ENABLE_DARKMODE/" _config.anzhiyu.yml
+# --------------------------
+# 依赖安装与构建
+# --------------------------
+npm install hexo-deployer-git --save
+hexo clean && hexo g
 
-# 安装依赖
-echo "⚙ 安装必要插件..."
-npm install hexo-deployer-git hexo-renderer-pug hexo-renderer-stylus --save
-# 完成提示
-echo -e "\n\033[32m✔ 配置完成！\033[0m"
-echo "========================================"
-echo "后续操作建议："
-echo "1. 修改主题配置：vim _config.anzhiyu.yml"
-echo "2. 创建第一篇博客：hexo new \"Hello World\""
-echo "3. 本地预览：hexo server --port 8080"
-echo "4. 部署发布：hexo clean && hexo g --deploy"
-echo "========================================"
+# --------------------------
+# 自动部署与推送
+# --------------------------
+hexo d
+
+# 返回上级目录处理源码提交
+cd ..
+git init
+git add .
+git commit -m "chore: Initial Hexo setup with anzhiyu theme [auto-generated]"
+git branch -M main
+git remote add origin "https://github.com/${GITHUB_USERNAME}/${GITHUB_USERNAME}.github.io.git"
+git push -u origin main -f
