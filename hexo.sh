@@ -9,20 +9,20 @@ GITHUB_USERNAME="RiYueRY"  # 修改为你的GitHub用户名
 # 核心执行部分
 # ========================
 
-# 安装Hexo脚手架
+echo '安装Hexo-cli'
 npm install hexo-cli -g
 
-# 初始化项目
+echo '初始化项目'
 hexo init hexo
 cd hexo
 
-# 下载主题
+echo '下载主题'
 git clone https://github.com/anzhiyu-c/hexo-theme-anzhiyu.git themes/anzhiyu
 
-# 修改主题配置
+echo '修改主题配置'
 sed -i "s/^theme:.*/theme: anzhiyu/" _config.yml
 
-# 替换部署配置 (核心修复)
+echo '替换部署配置 (核心修复)'
 awk -v user="$GITHUB_USERNAME" '
 /deploy:/ {
     print "deploy:"
@@ -37,10 +37,10 @@ awk -v user="$GITHUB_USERNAME" '
 { print }
 ' _config.yml > tmp && mv tmp _config.yml
 
-# 安装部署插件
+echo '安装部署插件'
 npm install hexo-deployer-git --save
 
-# 生成并部署
+echo '生成并部署'
 hexo clean && hexo g --deploy
 
 echo "部署完成！访问地址：https://${GITHUB_USERNAME}.github.io"
